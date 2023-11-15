@@ -50,6 +50,7 @@ function viewDepartments() {
          return;
       }
     console.table(rows)
+    options();
   });
 };
 
@@ -63,11 +64,12 @@ function viewRoles() {
          return;
       }
     console.table(rows)
+    options();
   });
 };
 
 function viewEmployees() {
-    const sql = `SELECT * FROM employees LEFT JOIN roles ON employees.role_id = role.id LEFT JOIN departments ON roles.department_id = departments.id`; // Add ' LEFT JOIN departments ON roles.department_id = department.id' at the end but for the manager
+    const sql = `SELECT * FROM employees LEFT JOIN roles ON employees.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id`; // Add ' LEFT JOIN departments ON roles.department_id = department.id' at the end but for the manager
     console.log("viewEmployees running");
 
     db.query(sql, (err, rows) => {
@@ -76,6 +78,7 @@ function viewEmployees() {
          return;
       }
     console.table(rows)
+    options();
   });
 };
 
@@ -98,7 +101,8 @@ function addDepartment() {
             return;
         }
 
-        console.log(`Department ${departmentName} added successfully.`);
+        console.log(`Department '${departmentName}' added successfully.`);
+        options();
         });
     })
     .catch((error) => {
@@ -137,7 +141,8 @@ function addRole() {
             return;
         }
 
-        console.log(`Role ${roleTitle} added successfully.`);
+        console.log(`Role '${roleTitle}' added successfully.`);
+        options();
         });
     })
     .catch((error) => {
@@ -178,11 +183,12 @@ function addEmployee() {
 
         db.query(sql, (err, rows) => {
             if (err) {
-                console.error(err);
+            console.error(err);
             return;
         }
 
         console.log(`Employee ${employeeFirstName} ${employeeLastName} added successfully.`);
+        options();
         });
     })
     .catch((error) => {
@@ -190,26 +196,83 @@ function addEmployee() {
     });
 };
 
-function updateEmployee() {
+// -- Update Paths --
+// Gets Employees
+const getEmployees = async () => {
+    const sql = 'SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employees';
+    return new Promise((resolve, reject) => {
+        db.query(sql, (err, res) => {
+            if (err) reject(err);
+            resolve(res);
+        })
+    })
+};
 
+// Gets Roles
+const getRoles = async () => {
+    const sql = 'SELECT id, title FROM roles';
+    return new Promise((resolve, reject) => {
+        db.query(sql, (err, res) => {
+            if (err) reject(err);
+            resolve(res);
+        });
+    });
+};
+
+// Update Employee Roles
+const updateEmployee = async () => {
+    try {
+        // Get Employees and Roles
+        const employees = await getEmployees();
+        const roles = await getRoles();
+
+        // Create Choices for Questions
+        const employeeChoices = employees.map(emp => ({
+            name: emp.name,
+            value: emp.id
+        }));
+
+        const roleChoices = roles.map(role => ({
+            name: role.title,
+            value: role.id
+        }));
+
+        // Update Questions
+
+        // inquirer prompt
+        // use the employee id and role id to update a user and their role
+        // UPDATE table_name SET role_id = ?
+        // WHERE employee.id = ?
+        return inquirer.prompt([
+            {
+                type: 'list',
+                message: 'Which employee?',
+                name: 'updateEmployee',
+                choices: employeeChoices,
+            },
+            {
+                type: 'list',
+                message: 'What role?',
+                name: 'updateRole',
+                choices: roleChoices,
+            },
+        ])
+        .then(({ updateEmployee, updateRole }) => {
+
+            const sql = 'UPDATE employees SET role_id = ? WHERE employees.id = ?';
+
+            db.query(sql, [updateRole, updateEmployee], (err, res) => {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                console.log('Update Complete');
+                options();
+            })
+        })
+    } catch (err) {
+        console.log(err);
+    }
 };
 
 options();
-
-        // {
-        //     type: 'checkbox',
-        //     name: 'badges',
-        //     message: 'What badges should be added to the README?',
-        //     choices: ['HTML', 'CSS', 'JavaScript'],
-        // },
-        // {
-        //     type: 'input',
-        //     name: 'screenshot',
-        //     message: 'What is the name of the project screenshot?',
-        // },
-        // {
-        //     type: 'list',
-        //     name: 'video',
-        //     message: 'Does their need to be a video section?', 
-        //     choices: ['yes', 'no'],
-        // },
